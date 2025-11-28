@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>SleepCycle Streettool</title>
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png">
+<link rel="shortcut icon" href="/icons/favicon.ico">
+
+<!-- iOS Web App -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SleepCycle">
+
+<!-- Icons voor iOS -->
+<link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="152x152" href="/icons/apple-touch-icon-152.png">
+<link rel="apple-touch-icon" sizes="167x167" href="/icons/apple-touch-icon-167.png">
+<link rel="apple-touch-icon" sizes="120x120" href="/icons/apple-touch-icon-120.png">
+
+<!-- Manifest (voor PWA) -->
+<link rel="manifest" href="/manifest.json">
+
+<meta name="theme-color" content="#0f1724">
+
+<style>
+:root{font-family:Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;color:#0b0b0b}
+body{margin:0;padding:18px;background:#0f1724;color:#e6eef8}
+.wrap{max-width:940px;margin:12px auto;padding:18px;background:#0b1220;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.6)}
+h1{margin:0 0 8px;font-size:20px;color:#fff}
+p.small{margin:0 0 12px;color:#9fb0d4}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.card{background:#071026;border:1px solid rgba(255,255,255,.03);padding:12px;border-radius:8px;min-width:220px;flex:1}
+.big{font-size:18px;font-weight:700}
+label{display:block;font-size:12px;color:#8fb0da;margin-bottom:6px}
+input{padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,.06);background:#061223;color:#e6eef8;width:100%}
+button{padding:8px 12px;border-radius:8px;border:0;background:#1f6feb;color:white;cursor:pointer}
+table{width:100%;border-collapse:collapse;margin-top:10px}
+th,td{padding:8px;border-bottom:1px solid rgba(255,255,255,.03);text-align:left;font-size:13px}
+.ok{color:#9be27b;font-weight:700}
+.mid{color:#ffd166;font-weight:700}
+.bad{color:#ff6b6b;font-weight:900}
+.hint{font-size:13px;color:#9fb0d4;margin-top:6px}
+.small-muted{font-size:12px;color:#7894b6}
+footer{margin-top:12px;font-size:12px;color:#7894b6}
+
+/* Popup animatie */
+@keyframes fadeIn { from {opacity:0; transform:translateY(-10px);} to {opacity:1; transform:translateY(0);} }
+@keyframes fadeOut { from {opacity:1; transform:translateY(0);} to {opacity:0; transform:translateY(-10px);} }
+
+#advicePopup {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  max-width: 90%;
+  width: 320px;
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(6px);
+  padding: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+  border: 1px solid rgba(0,0,0,0.1);
+  color: #000;
+  display: none;
+  z-index: 9999;
+  animation-duration: 0.4s;
+  animation-fill-mode: forwards;
+}
+
+#fullAnalysis {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  display: none;
+  z-index: 998;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+}
+
+#fullAnalysis .content {
+  background: #fff;
+  color: #000;
+  padding: 2rem;
+  border-radius: 24px;
+  width: 100%;
+  max-width: 400px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>SleepCycle Streettool</h1>
+  <p class="small">Check direct hoe laat je moet slapen of wakker worden, zonder die rare "brain fog" teksten.</p>
+
+  <div class="row">
+    <div class="card">
+      <div class="small-muted">Jouw lokale tijd</div>
+      <div id="localTime" class="big">--:--:--</div>
+      <div class="hint">Tijdzone: <span id="tzName"></span></div>
+    </div>
+
+    <div class="card">
+      <label>Wektijd (doel)</label>
+      <input id="wakeInput" type="time" value="07:30" />
+      <div style="margin-top:8px" class="row">
+        <button id="analyzeBtn">Analyseer nu</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="small-muted">Als je NU gaat slapen</div>
+      <div style="margin-top:6px">
+        <div>1e cyclus eind: <span id="firstCycle">--:--</span></div>
+        <div>2e cyclus eind: <span id="secondCycle">--:--</span></div>
+        <div>Advies: <span id="nowAdvice" class="ok">--</span></div>
+      </div>
+    </div>
+  </div>
+
+  <section style="margin-top:12px">
+    <h2 style="margin:8px 0;color:#cfe8ff;font-size:16px">Analyse</h2>
+    <div class="row">
+      <div class="card" style="flex:2">
+        <div id="analysisText">Klik op <strong>Analyseer nu</strong>.</div>
+      </div>
+      <div class="card" style="flex:1">
+        <div class="small-muted">Labels</div>
+        <div><span class="ok">GOED</span> = 4.5u+</div>
+        <div><span class="mid">KLEIN FOKT</span> = 3–4.5u</div>
+        <div><span class="bad">LAAG</span> = &lt;3u</div>
+      </div>
+    </div>
+  </section>
+
+  <section style="margin-top:12px">
+    <h2 style="margin:8px 0;color:#cfe8ff;font-size:16px">Uurtabel</h2>
+    <div style="overflow:auto;margin-top:8px">
+      <table id="hourTable">
+        <thead>
+          <tr><th>Start</th><th>+1 cyclus</th><th>+2 cycli</th><th>+3 cycli</th><th>Advies</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>Alles lokaal — geen tracking.</footer>
+</div>
+
+<!-- Popup -->
+<div id="advicePopup">
+  <h3 id="popupTitle" class="font-bold mb-1"></h3>
+  <p id="popupText" class="text-sm mb-2"></p>
+  <button onclick="document.getElementById('fullAnalysis').style.display='flex'" class="text-blue-600 underline text-sm">Read more</button>
+</div>
+
+<!-- Full Analysis -->
+<div id="fullAnalysis">
+  <div class="content">
+    <h2 class="text-xl font-bold mb-2">Volledige Analyse</h2>
+    <div id="analysisContent" class="text-sm mb-4"></div>
+    <button onclick="document.getElementById('fullAnalysis').style.display='none'" class="mt-2 bg-blue-600 text-white px-4 py-2 rounded-lg w-full">Sluiten</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  const localTimeEl = document.getElementById('localTime');
+  const tzNameEl = document.getElementById('tzName');
+  const firstCycleEl = document.getElementById('firstCycle');
+  const secondCycleEl = document.getElementById('secondCycle');
+  const nowAdviceEl = document.getElementById('nowAdvice');
+  const wakeInput = document.getElementById('wakeInput');
+  const analyzeBtn = document.getElementById('analyzeBtn');
+  const analysisText = document.getElementById('analysisText');
+  const hourTableBody = document.querySelector('#hourTable tbody');
+
+  function z(n){return (n<10?'0':'')+n;}
+  function fmt(d){return z(d.getHours())+':'+z(d.getMinutes());}
+
+  function updateClock(){
+    const now = new Date();
+    localTimeEl.textContent = fmt(now)+':'+z(now.getSeconds());
+    tzNameEl.textContent = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  }
+  setInterval(updateClock,1000);
+  updateClock();
+
+  const CYCLE = 90;
+  function addM(d,m){return new Date(d.getTime()+m*60000);}  
+  function diffM(a,b){let d=(b-a)/60000; if(d<0) d+=1440; return Math.round(d);} 
+  function parseWake(str){
+    const [hh,mm]=str.split(':').map(Number);
+    const now=new Date();
+    const t=new Date(now.getFullYear(),now.getMonth(),now.getDate(),hh,mm);
+    if(t<=now) t.setDate(t.getDate()+1);
+    return t;
+  }
+  function label(mins){
+    if(mins<180) return {txt:'LAAG',cls:'bad'};
+    if(mins<270) return {txt:'KLEIN FOKT',cls:'mid'};
+    return {txt:'GOED',cls:'ok'};
+  }
+  function analyze(start,wake){
+    const total=diffM(start,wake);
+    const l=label(total);
+    const first=addM(start,CYCLE);
+    return {total,l,first};
+  }
+  function updateNow(){
+    const now = new Date();
+    firstCycleEl.textContent=fmt(addM(now,CYCLE));
+    secondCycleEl.textContent=fmt(addM(now,CYCLE*2));
+    const eval2=label(CYCLE*2);
+    nowAdviceEl.textContent=eval2.txt;
+    nowAdviceEl.className=eval2.cls;
+  }
+  function buildTable(){
+    hourTableBody.innerHTML='';
+    const today=new Date();
+    for(let h=0;h<24;h++){
+      const s=new Date(today.getFullYear(),today.getMonth(),today.getDate(),h,0);
+      const c1=addM(s,CYCLE);
+      const c2=addM(s,CYCLE*2);
+      const c3=addM(s,CYCLE*3);
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td>${z(h)}:00</td><td>${fmt(c1)}</td><td>${fmt(c2)}</td><td>${fmt(c3)}</td><td class="small-muted">info</td>`;
+      tr.onclick=()=> triggerPopup(s);
+      hourTableBody.appendChild(tr);
+    }
+  }
+
+  function triggerPopup(start){
+    const now = new Date();
+    const wake=parseWake(wakeInput.value);
+    const a=analyze(start,wake);
+    const advice = a.l.txt;
+    const tips = advice==='GOED'?'Doorgaan zoals gepland':'Probeer eerder slapen';
+    analysisText.innerHTML=`Start: ${fmt(start)}<br>Totale slaap: ${Math.floor(a.total/60)}h ${a.total%60}m<br>Eerste cyclus: ${fmt(a.first)}<br><strong>Advies:</strong> <span class="${a.l.cls}">${advice}</span>`;
+    showAdvicePopup(advice, 'Beste actie', tips, analysisText.innerHTML);
+  }
+
+  analyzeBtn.onclick=()=> triggerPopup(new Date());
+
+  updateNow();
+  buildTable();
+})();
+
+function showAdvicePopup(level, bestAction, tips, analysisHTML) {
+  const popup = document.getElementById('advicePopup');
+  const title = document.getElementById('popupTitle');
+  const text = document.getElementById('popupText');
+  const analysisBox = document.getElementById('analysisContent');
+
+  let titleText = '';
+  if (level === 'GOED') titleText = 'Je zit safe wollah';
+  if (level === 'KLEIN FOKT') titleText = 'Is beetje link man';
+  if (level === 'LAAG') titleText = 'Bro je bent fucked…';
+
+  title.innerText = titleText;
+  text.innerText = bestAction + " — " + tips;
+  analysisBox.innerHTML = analysisHTML;
+
+  popup.style.display = 'block';
+  popup.style.animationName = 'fadeIn';
+
+  setTimeout(() => {
+    popup.style.animationName = 'fadeOut';
+    setTimeout(() => popup.style.display='none', 400);
+  }, 6500);
+}
+</script>
+</body>
+</html>
