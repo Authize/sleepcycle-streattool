@@ -1,0 +1,21 @@
+{
+  "name": "SleepCycle Streettool",
+  "short_name": "SleepCycle",
+  "description": "Check je slaap en wake-up cycles op een street-ready manier.",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#0f1724",
+  "theme_color": "#0f1724",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
